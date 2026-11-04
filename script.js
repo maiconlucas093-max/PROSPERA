@@ -3,53 +3,54 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const links = document.querySelectorAll(".nav-link");
 
-  // Destaca o item selecionado no menu
-  links.forEach(function (link) {
-
-    link.addEventListener("click", function () {
-
-      links.forEach(function (item) {
-        item.classList.remove("active");
-      });
-
-      this.classList.add("active");
-
+  // Localiza todos os destinos existentes no menu
+  const sections = Array.from(links)
+    .map(function (link) {
+      const id = link.getAttribute("href").replace("#", "");
+      return document.getElementById(id);
+    })
+    .filter(function (section) {
+      return section !== null;
     });
 
+  // Atualiza o item ativo do menu
+  function updateActiveLink(id) {
+    links.forEach(function (link) {
+      const isActive = link.getAttribute("href") === "#" + id;
+      link.classList.toggle("active", isActive);
+    });
+  }
+
+  // Ao clicar no menu, destaca o destino
+  links.forEach(function (link) {
+    link.addEventListener("click", function () {
+      const id = this.getAttribute("href").replace("#", "");
+      updateActiveLink(id);
+    });
   });
 
-  // Atualiza o destaque conforme a seção visualizada
-  const sections = document.querySelectorAll(
-    "main section[id]"
-  );
-
+  // Acompanha a seção visível na tela
   if ("IntersectionObserver" in window) {
 
     const observer = new IntersectionObserver(
       function (entries) {
 
-        entries.forEach(function (entry) {
+        const visibleSections = entries
+          .filter(function (entry) {
+            return entry.isIntersecting;
+          })
+          .sort(function (a, b) {
+            return b.intersectionRatio - a.intersectionRatio;
+          });
 
-          if (entry.isIntersecting) {
-
-            const id = entry.target.id;
-
-            links.forEach(function (link) {
-
-              link.classList.toggle(
-                "active",
-                link.getAttribute("href") === "#" + id
-              );
-
-            });
-
-          }
-
-        });
+        if (visibleSections.length > 0) {
+          updateActiveLink(visibleSections[0].target.id);
+        }
 
       },
       {
-        rootMargin: "-20% 0px -65% 0px"
+        rootMargin: "-15% 0px -65% 0px",
+        threshold: [0, 0.25, 0.5, 0.75, 1]
       }
     );
 
