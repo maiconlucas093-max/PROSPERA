@@ -3,59 +3,83 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const links = document.querySelectorAll(".nav-link");
 
-  // Localiza todos os destinos existentes no menu
-  const sections = Array.from(links)
+  // Encontra o destino de cada item do menu
+  const destinations = Array.from(links)
     .map(function (link) {
-      const id = link.getAttribute("href").replace("#", "");
-      return document.getElementById(id);
+      return document.querySelector(link.getAttribute("href"));
     })
-    .filter(function (section) {
-      return section !== null;
+    .filter(function (element) {
+      return element !== null;
     });
 
-  // Atualiza o item ativo do menu
+  // Destaca o item ativo
   function updateActiveLink(id) {
     links.forEach(function (link) {
-      const isActive = link.getAttribute("href") === "#" + id;
-      link.classList.toggle("active", isActive);
+      const active = link.getAttribute("href") === "#" + id;
+      link.classList.toggle("active", active);
     });
   }
 
-  // Ao clicar no menu, destaca o destino
+  // Controla a navegação ao clicar no menu
   links.forEach(function (link) {
-    link.addEventListener("click", function () {
-      const id = this.getAttribute("href").replace("#", "");
-      updateActiveLink(id);
+
+    link.addEventListener("click", function (event) {
+
+      const destination = document.querySelector(
+        this.getAttribute("href")
+      );
+
+      if (!destination) {
+        return;
+      }
+
+      event.preventDefault();
+
+      updateActiveLink(destination.id);
+
+      destination.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+
+      history.replaceState(
+        null,
+        "",
+        "#" + destination.id
+      );
+
     });
+
   });
 
-  // Acompanha a seção visível na tela
+  // Atualiza o menu conforme a navegação pela página
   if ("IntersectionObserver" in window) {
 
     const observer = new IntersectionObserver(
       function (entries) {
 
-        const visibleSections = entries
+        const visible = entries
           .filter(function (entry) {
             return entry.isIntersecting;
           })
           .sort(function (a, b) {
-            return b.intersectionRatio - a.intersectionRatio;
+            return a.boundingClientRect.top -
+                   b.boundingClientRect.top;
           });
 
-        if (visibleSections.length > 0) {
-          updateActiveLink(visibleSections[0].target.id);
+        if (visible.length > 0) {
+          updateActiveLink(visible[0].target.id);
         }
 
       },
       {
-        rootMargin: "-15% 0px -65% 0px",
-        threshold: [0, 0.25, 0.5, 0.75, 1]
+        rootMargin: "-10% 0px -75% 0px",
+        threshold: 0
       }
     );
 
-    sections.forEach(function (section) {
-      observer.observe(section);
+    destinations.forEach(function (destination) {
+      observer.observe(destination);
     });
 
   }
