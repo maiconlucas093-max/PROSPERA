@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101827">
+  <title>PROSPERA | Painel Central</title>
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: #101827;
+      color: #ffffff;
+      padding: 20px;
+    }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+    }
+    
+    header h1 {
+      font-size: 26px;
+      color: #55d6a5;
+    }
+    
+    header span {
+      color: #aab5c5;
+      font-size: 12px;
+    }
+    
+    .welcome {
+      background: #1b2940;
+      padding: 22px;
+      border-radius: 16px;
+      margin-bottom: 22px;
+    }
+    
+    .welcome h2 {
+      margin-bottom: 8px;
+    }
+    
+    .welcome p {
+      color: #b8c4d6;
+      line-height: 1.5;
+    }
+    
+    .section-title {
+      margin: 22px 0 14px;
+      font-size: 18px;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 13px;
+    }
+    
+    .card {
+      background: #1b2940;
+      padding: 18px;
+      border-radius: 14px;
+      min-height: 125px;
+      border: 1px solid #2b3b54;
+    }
+    
+    .card .icon {
+      font-size: 27px;
+      margin-bottom: 12px;
+    }
+    
+    .card h3 {
+      font-size: 15px;
+      margin-bottom: 7px;
+    }
+    
+    .card p {
+      color: #aab5c5;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    
+    .status {
+      color: #55d6a5;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    
+    .agenda {
+      background: #1b2940;
+      padding: 18px;
+      border-radius: 14px;
+      margin-top: 22px;
+    }
+    
+    .agenda-item {
+      padding: 13px 0;
+      border-bottom: 1px solid #35445a;
+    }
+    
+    .agenda-item:last-child {
+      border-bottom: none;
+    }
+    
+    .agenda-item strong {
+      color: #55d6a5;
+    }
+    
+    .agenda-item p {
+      color: #c0cada;
+      margin-top: 5px;
+      font-size: 13px;
+    }
+    
+    footer {
+      text-align: center;
+      color: #7f8da3;
+      font-size: 12px;
+      margin-top: 30px;
+    }
+    
+    @media (max-width: 360px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  
+  <header>
+    <h1>PROSPERA</h1>
+    <span>PAINEL CENTRAL</span>
+  </header>
+  
+  <section class="welcome">
+    <h2>Bem-vindo à PROSPERA!</h2>
+    <p>
+      Seu centro de comando inteligente.
+      Organize sua rotina, acompanhe suas plataformas
+      e mantenha tudo conectado em um só lugar.
+    </p>
+  </section>
+  
+  <h2 class="section-title">Minhas plataformas</h2>
+  
+  <section class="grid">
+    
+    <div class="card">
+      <div class="icon">📅</div>
+      <h3>Agenda Central</h3>
+      <p>Organização dos seus horários e compromissos.</p>
+      <div class="status">● Módulo principal</div>
+    </div>
+    
+    <div class="card">
+      <div class="icon">💪</div>
+      <h3>Viva-Fit-PRO</h3>
+      <p>Treinos, exercícios e acompanhamento físico.</p>
+      <div class="status">● Integração planejada</div>
+    </div>
+    
+    <div class="card">
+      <div class="icon">🔔</div>
+      <h3>Notificações</h3>
+      <p>Lembretes e avisos da sua rotina.</p>
+      <div class="status">● Painel inicial</div>
+    </div>
+    
+    <div class="card">
+      <div class="icon">🧩</div>
+      <h3>Novas plataformas</h3>
+      <p>Espaço preparado para futuras integrações.</p>
+      <div class="status">● Expansível</div>
+    </div>
+    
+  </section>
+  
+  <section class="agenda">
+    <h2>Minha rotina</h2>
+    
+    <div class="agenda-item">
+      <strong>18:20 – 19:10</strong>
+      <p>Treino diário — Viva-Fit-PRO</p>
+    </div>
+    
+    <div class="agenda-item">
+      <strong>Agenda inteligente</strong>
+      <p>Em breve: sincronização dos compromissos das plataformas.</p>
+    </div>
+  </section>
+  
+  <footer>
+    PROSPERA © 2026 — Seu centro de comando.
+  </footer>
+  
+</body>
+
+</html>
