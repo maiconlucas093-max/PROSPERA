@@ -1,0 +1,382 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101827">
+<title>PROSPERA | Agenda Inteligente</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:Arial,sans-serif;
+  background:#101827;color:#fff;padding:18px;
+}
+header{
+  display:flex;justify-content:space-between;
+  align-items:center;margin-bottom:22px;
+}
+header h1{color:#55d6a5;font-size:24px}
+header a{color:#55d6a5;text-decoration:none;font-size:13px}
+h2{font-size:20px;margin-bottom:8px}
+.subtitle{color:#aab5c5;font-size:13px;margin-bottom:20px}
+.controls{
+  display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;
+}
+button,select,input,textarea{
+  font:inherit;border-radius:9px;padding:11px;
+}
+button{
+  border:0;background:#263852;color:#fff;cursor:pointer;
+}
+button.active,.primary{background:#168b68}
+select,input,textarea{
+  background:#1b2940;color:#fff;border:1px solid #35445a;
+  width:100%;
+}
+#calendar{
+  background:#1b2940;padding:13px;border-radius:14px;
+}
+.month-head{
+  display:flex;justify-content:space-between;
+  align-items:center;margin-bottom:15px;
+}
+.month-head button{padding:8px 13px}
+.weekdays,.days{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  gap:5px;text-align:center;
+}
+.weekdays div{font-size:11px;color:#aab5c5;padding:8px 0}
+.day{
+  min-height:43px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;cursor:pointer;position:relative;
+}
+.day.other{color:#66758a}
+.day.today{border:1px solid #55d6a5}
+.day.selected{background:#168b68}
+.day.has-event:after{
+  content:"";position:absolute;bottom:4px;
+  width:5px;height:5px;border-radius:50%;
+  background:#55d6a5;
+}
+#agenda-list{
+  margin-top:22px;background:#1b2940;
+  padding:16px;border-radius:14px;
+}
+.event{
+  padding:13px;margin-top:10px;
+  background:#263852;border-radius:10px;
+  display:flex;justify-content:space-between;gap:10px;
+}
+.event strong{color:#55d6a5}
+.event p{font-size:13px;color:#bdc9d9;margin-top:5px}
+.delete{background:#633b48;padding:8px;font-size:12px}
+.empty{color:#aab5c5;font-size:13px;margin-top:12px}
+#form-area{
+  display:none;background:#1b2940;
+  padding:16px;border-radius:14px;margin-top:20px;
+}
+#form-area label{display:block;font-size:13px;margin:12px 0 6px}
+#form-area button{margin-top:15px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.notice{font-size:11px;color:#aab5c5;margin-top:15px}
+@media(max-width:360px){
+  body{padding:12px}
+  .day{min-height:36px;font-size:12px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>PROSPERA</h1>
+  <a href="index.html">← Painel central</a>
+</header>
+
+<h2>Agenda Inteligente</h2>
+<p class="subtitle">Seus compromissos organizados em um só lugar.</p>
+
+<div class="controls">
+  <button class="active" id="month-btn" onclick="setView('month')">Mês</button>
+  <button id="week-btn" onclick="setView('week')">Semana</button>
+  <button id="day-btn" onclick="setView('day')">Dia</button>
+  <button class="primary" onclick="openForm()">+ Novo compromisso</button>
+</div>
+
+<div id="calendar">
+  <div class="month-head">
+    <button onclick="changeMonth(-1)">‹</button>
+    <strong id="month-title"></strong>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="weekdays">
+    <div>DOM</div><div>SEG</div><div>TER</div>
+    <div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div>
+  </div>
+  <div class="days" id="days"></div>
+</div>
+
+<div id="agenda-list">
+  <h3 id="selected-title">Compromissos</h3>
+  <div id="events"></div>
+</div>
+
+<div id="form-area">
+  <h3>Novo compromisso</h3>
+
+  <form id="event-form">
+    <label for="title">Título</label>
+    <input id="title" required maxlength="100"
+      placeholder="Ex.: Treino Viva-Fit-PRO">
+
+    <label for="description">Descrição</label>
+    <textarea id="description" rows="2"
+      placeholder="Detalhes do compromisso"></textarea>
+
+    <div class="form-grid">
+      <div>
+        <label for="date">Data</label>
+        <input id="date" type="date" required>
+      </div>
+      <div>
+        <label for="start">Horário inicial</label>
+        <input id="start" type="time" required>
+      </div>
+      <div>
+        <label for="end">Horário final</label>
+        <input id="end" type="time">
+      </div>
+    </div>
+
+    <button class="primary" type="submit">Salvar compromisso</button>
+    <button type="button" onclick="closeForm()">Cancelar</button>
+  </form>
+</div>
+
+<p class="notice">
+  Esta primeira versão salva os compromissos neste navegador.
+  A sincronização com a nuvem será implementada na próxima etapa.
+</p>
+
+<script>
+const STORAGE_KEY = "prospera_agenda_v1";
+
+let events = loadEvents();
+let current = new Date();
+let selected = dateKey(new Date());
+let view = "month";
+
+function loadEvents(){
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch(e) {
+    return [];
+  }
+}
+
+function saveEvents(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+}
+
+function dateKey(d){
+  return [
+    d.getFullYear(),
+    String(d.getMonth()+1).padStart(2,"0"),
+    String(d.getDate()).padStart(2,"0")
+  ].join("-");
+}
+
+function parseDate(s){
+  const [y,m,d] = s.split("-").map(Number);
+  return new Date(y,m-1,d);
+}
+
+function sameDay(a,b){
+  return dateKey(a) === dateKey(b);
+}
+
+function setView(v){
+  view = v;
+  document.querySelectorAll(".controls button").forEach(b=>{
+    b.classList.remove("active");
+  });
+  document.getElementById(v+"-btn").classList.add("active");
+  render();
+}
+
+function changeMonth(delta){
+  current = new Date(
+    current.getFullYear(),
+    current.getMonth()+delta,
+    1
+  );
+  render();
+}
+
+function render(){
+  const year=current.getFullYear();
+  const month=current.getMonth();
+
+  document.getElementById("month-title").textContent =
+    current.toLocaleDateString("pt-BR",{
+      month:"long",year:"numeric"
+    });
+
+  const days=document.getElementById("days");
+  days.innerHTML="";
+
+  let start, count;
+
+  if(view==="month"){
+    start=new Date(year,month,1);
+    start.setDate(1-start.getDay());
+    count=42;
+  }else if(view==="week"){
+    start=parseDate(selected);
+    start.setDate(start.getDate()-start.getDay());
+    count=7;
+  }else{
+    start=parseDate(selected);
+    count=1;
+  }
+
+  for(let i=0;i<count;i++){
+    const d=new Date(start);
+    d.setDate(start.getDate()+i);
+    const key=dateKey(d);
+
+    const cell=document.createElement("div");
+    cell.className="day";
+    cell.textContent=d.getDate();
+
+    if(d.getMonth()!==month && view==="month")
+      cell.classList.add("other");
+
+    if(key===dateKey(new Date()))
+      cell.classList.add("today");
+
+    if(key===selected)
+      cell.classList.add("selected");
+
+    if(events.some(e=>e.date===key))
+      cell.classList.add("has-event");
+
+    cell.onclick=()=>{
+      selected=key;
+      if(view==="month") view="day";
+      updateButtons();
+      render();
+    };
+
+    days.appendChild(cell);
+  }
+
+  document.getElementById("selected-title").textContent =
+    "Compromissos — "+parseDate(selected).toLocaleDateString("pt-BR");
+
+  renderEvents();
+}
+
+function updateButtons(){
+  document.querySelectorAll(".controls button").forEach(b=>{
+    b.classList.remove("active");
+  });
+  document.getElementById(view+"-btn").classList.add("active");
+}
+
+function renderEvents(){
+  const container=document.getElementById("events");
+  container.innerHTML="";
+
+  const list=events
+    .filter(e=>e.date===selected)
+    .sort((a,b)=>a.start.localeCompare(b.start));
+
+  if(!list.length){
+    container.innerHTML='<p class="empty">Nenhum compromisso nesta data.</p>';
+    return;
+  }
+
+  list.forEach(e=>{
+    const item=document.createElement("div");
+    item.className="event";
+
+    const info=document.createElement("div");
+    const heading=document.createElement("strong");
+    heading.textContent=e.title;
+
+    const time=document.createElement("p");
+    time.textContent=e.start+(e.end?" até "+e.end:"");
+
+    const desc=document.createElement("p");
+    desc.textContent=e.description||"";
+
+    info.append(heading,time,desc);
+
+    const del=document.createElement("button");
+    del.className="delete";
+    del.textContent="Excluir";
+    del.onclick=()=>{
+      if(confirm("Excluir este compromisso?")){
+        events=events.filter(x=>x.id!==e.id);
+        saveEvents();
+        render();
+      }
+    };
+
+    item.append(info,del);
+    container.appendChild(item);
+  });
+}
+
+function openForm(){
+  document.getElementById("form-area").style.display="block";
+  document.getElementById("date").value=selected;
+}
+
+function closeForm(){
+  document.getElementById("form-area").style.display="none";
+}
+
+document.getElementById("event-form").addEventListener("submit",e=>{
+  e.preventDefault();
+
+  const title=document.getElementById("title").value.trim();
+  const description=document.getElementById("description").value.trim();
+  const date=document.getElementById("date").value;
+  const start=document.getElementById("start").value;
+  const end=document.getElementById("end").value;
+
+  if(!title||!date||!start){
+    alert("Preencha o título, a data e o horário inicial.");
+    return;
+  }
+
+  if(end && end<=start){
+    alert("O horário final deve ser posterior ao inicial.");
+    return;
+  }
+
+  events.push({
+    id:Date.now().toString(),
+    title,description,date,start,end
+  });
+
+  saveEvents();
+  selected=date;
+  current=parseDate(date);
+  view="day";
+  updateButtons();
+  e.target.reset();
+  closeForm();
+  render();
+});
+
+render();
+</script>
+
+</body>
+</html>
