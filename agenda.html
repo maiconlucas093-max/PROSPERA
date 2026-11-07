@@ -2,381 +2,547 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#101827">
-<title>PROSPERA | Agenda Inteligente</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="Agenda inteligente PROSPERA">
+  <title>Agenda | PROSPERA</title>
 
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:Arial,sans-serif;
-  background:#101827;color:#fff;padding:18px;
-}
-header{
-  display:flex;justify-content:space-between;
-  align-items:center;margin-bottom:22px;
-}
-header h1{color:#55d6a5;font-size:24px}
-header a{color:#55d6a5;text-decoration:none;font-size:13px}
-h2{font-size:20px;margin-bottom:8px}
-.subtitle{color:#aab5c5;font-size:13px;margin-bottom:20px}
-.controls{
-  display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;
-}
-button,select,input,textarea{
-  font:inherit;border-radius:9px;padding:11px;
-}
-button{
-  border:0;background:#263852;color:#fff;cursor:pointer;
-}
-button.active,.primary{background:#168b68}
-select,input,textarea{
-  background:#1b2940;color:#fff;border:1px solid #35445a;
-  width:100%;
-}
-#calendar{
-  background:#1b2940;padding:13px;border-radius:14px;
-}
-.month-head{
-  display:flex;justify-content:space-between;
-  align-items:center;margin-bottom:15px;
-}
-.month-head button{padding:8px 13px}
-.weekdays,.days{
-  display:grid;grid-template-columns:repeat(7,1fr);
-  gap:5px;text-align:center;
-}
-.weekdays div{font-size:11px;color:#aab5c5;padding:8px 0}
-.day{
-  min-height:43px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:13px;cursor:pointer;position:relative;
-}
-.day.other{color:#66758a}
-.day.today{border:1px solid #55d6a5}
-.day.selected{background:#168b68}
-.day.has-event:after{
-  content:"";position:absolute;bottom:4px;
-  width:5px;height:5px;border-radius:50%;
-  background:#55d6a5;
-}
-#agenda-list{
-  margin-top:22px;background:#1b2940;
-  padding:16px;border-radius:14px;
-}
-.event{
-  padding:13px;margin-top:10px;
-  background:#263852;border-radius:10px;
-  display:flex;justify-content:space-between;gap:10px;
-}
-.event strong{color:#55d6a5}
-.event p{font-size:13px;color:#bdc9d9;margin-top:5px}
-.delete{background:#633b48;padding:8px;font-size:12px}
-.empty{color:#aab5c5;font-size:13px;margin-top:12px}
-#form-area{
-  display:none;background:#1b2940;
-  padding:16px;border-radius:14px;margin-top:20px;
-}
-#form-area label{display:block;font-size:13px;margin:12px 0 6px}
-#form-area button{margin-top:15px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.notice{font-size:11px;color:#aab5c5;margin-top:15px}
-@media(max-width:360px){
-  body{padding:12px}
-  .day{min-height:36px;font-size:12px}
-}
-</style>
+  <link rel="stylesheet" href="css/agenda.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #101827;
+      color: #f5f5f5;
+      font-family: Arial, sans-serif;
+    }
+
+    .agenda-container {
+      width: 100%;
+      max-width: 1400px;
+      margin: auto;
+    }
+
+    .agenda-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+    }
+
+    .agenda-header h1 {
+      margin: 0;
+      color: #d8b45b;
+    }
+
+    .agenda-header p {
+      color: #aab4c5;
+      margin-bottom: 0;
+    }
+
+    .agenda-toolbar,
+    .agenda-navigation {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .agenda-button {
+      border: 1px solid #35445b;
+      background: #1b2940;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 8px;
+    }
+
+    .agenda-button:hover {
+      border-color: #d8b45b;
+    }
+
+    .agenda-button.active,
+    .agenda-button.primary {
+      background: #d8b45b;
+      color: #101827;
+      border-color: #d8b45b;
+      font-weight: bold;
+    }
+
+    .agenda-panel {
+      background: #172337;
+      border: 1px solid #293a53;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 20px;
+      min-width: 0;
+    }
+
+    .agenda-period {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    #month-title {
+      font-size: 20px;
+      color: #d8b45b;
+      margin: 0;
+      text-transform: capitalize;
+    }
+
+    /* Calendário mensal */
+
+    #days {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 5px;
+    }
+
+    .calendar-weekday {
+      text-align: center;
+      padding: 10px 2px;
+      color: #d8b45b;
+      font-weight: bold;
+    }
+
+    .calendar-day {
+      min-height: 55px;
+      border: 1px solid #30415a;
+      border-radius: 7px;
+      background: #1d2b42;
+      color: white;
+      position: relative;
+    }
+
+    .calendar-day:hover,
+    .calendar-day.selected {
+      border-color: #d8b45b;
+      background: #30415a;
+    }
+
+    .calendar-day.today {
+      outline: 2px solid #d8b45b;
+    }
+
+    .calendar-day.outside-month {
+      opacity: .35;
+    }
+
+    .calendar-dot {
+      width: 6px;
+      height: 6px;
+      background: #d8b45b;
+      border-radius: 50%;
+      position: absolute;
+      bottom: 7px;
+      left: calc(50% - 3px);
+    }
+
+    /* Grade semanal e diária */
+
+    #schedule-wrap {
+      width: 100%;
+      overflow-x: auto;
+      max-height: 75vh;
+      overflow-y: auto;
+    }
+
+    #schedule-wrap[hidden] {
+      display: none;
+    }
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: 65px repeat(7, minmax(105px, 1fr));
+      grid-template-rows: 42px repeat(96, 24px);
+      min-width: 850px;
+      position: relative;
+      background: #172337;
+    }
+
+    .schedule-grid.day-schedule {
+      grid-template-columns: 65px minmax(220px, 1fr);
+      min-width: 320px;
+    }
+
+    .schedule-corner,
+    .schedule-day-head {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: #24344c;
+      border: 1px solid #3a4c65;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #d8b45b;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .schedule-corner {
+      left: 0;
+      z-index: 7;
+    }
+
+    .schedule-time {
+      grid-column: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 3px;
+      font-size: 10px;
+      color: #aab4c5;
+      background: #1d2b42;
+      border-bottom: 1px solid #30415a;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+    }
+
+    .schedule-slot {
+      grid-row: auto;
+      min-width: 0;
+      border: 0;
+      border-right: 1px solid #30415a;
+      border-bottom: 1px solid #30415a;
+      background: transparent;
+      padding: 0;
+    }
+
+    .schedule-slot:hover {
+      background: rgba(216, 180, 91, .13);
+    }
+
+    .schedule-event {
+      z-index: 3;
+      margin: 2px;
+      padding: 5px;
+      overflow: hidden;
+      text-align: left;
+      color: #101827;
+      background: #d8b45b;
+      border: 0;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: bold;
+      min-width: 0;
+    }
+
+    /* Lista de compromissos */
+
+    #selected-title {
+      color: #d8b45b;
+      text-transform: capitalize;
+    }
+
+    #events {
+      display: grid;
+      gap: 10px;
+    }
+
+    .agenda-event-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 13px;
+      border: 1px solid #35445b;
+      background: #1d2b42;
+      border-radius: 8px;
+    }
+
+    .agenda-event-info {
+      display: grid;
+      gap: 5px;
+    }
+
+    .agenda-event-time {
+      color: #d8b45b;
+      font-size: 13px;
+    }
+
+    .agenda-event-description {
+      color: #aab4c5;
+      margin: 3px 0;
+      white-space: pre-wrap;
+    }
+
+    .agenda-event-actions {
+      display: flex;
+      gap: 7px;
+    }
+
+    .agenda-event-actions button {
+      padding: 7px 10px;
+      border-radius: 6px;
+      border: 1px solid #52627a;
+      background: #263750;
+      color: white;
+    }
+
+    .agenda-event-actions button:hover {
+      border-color: #d8b45b;
+    }
+
+    .empty-events {
+      color: #aab4c5;
+    }
+
+    /* Formulário */
+
+    #form-area[hidden],
+    #event-form[hidden] {
+      display: none;
+    }
+
+    #form-area {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+      background: rgba(0, 0, 0, .75);
+      overflow-y: auto;
+    }
+
+    #event-form {
+      width: 100%;
+      max-width: 480px;
+      padding: 22px;
+      background: #172337;
+      border: 1px solid #d8b45b;
+      border-radius: 12px;
+      display: grid;
+      gap: 13px;
+    }
+
+    #event-form h2 {
+      color: #d8b45b;
+      margin: 0;
+    }
+
+    #event-form label {
+      display: grid;
+      gap: 6px;
+      color: #dce3ed;
+      font-size: 13px;
+    }
+
+    #event-form input,
+    #event-form textarea {
+      width: 100%;
+      padding: 11px;
+      border-radius: 7px;
+      border: 1px solid #43536b;
+      background: #101827;
+      color: white;
+    }
+
+    #event-form textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 12px;
+      }
+
+      .agenda-panel {
+        padding: 12px;
+      }
+
+      .calendar-day {
+        min-height: 43px;
+      }
+
+      .agenda-header h1 {
+        font-size: 24px;
+      }
+
+      .agenda-toolbar,
+      .agenda-navigation {
+        width: 100%;
+      }
+
+      .agenda-button {
+        padding: 9px 10px;
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <main class="agenda-container">
 
-<header>
-  <h1>PROSPERA</h1>
-  <a href="index.html">← Painel central</a>
-</header>
+    <header class="agenda-header">
+      <div>
+        <h1>PROSPERA</h1>
+        <p>Minha agenda inteligente</p>
+      </div>
 
-<h2>Agenda Inteligente</h2>
-<p class="subtitle">Seus compromissos organizados em um só lugar.</p>
+      <button
+        type="button"
+        class="agenda-button primary"
+        id="add-event-button">
+        + Novo compromisso
+      </button>
+    </header>
 
-<div class="controls">
-  <button class="active" id="month-btn" onclick="setView('month')">Mês</button>
-  <button id="week-btn" onclick="setView('week')">Semana</button>
-  <button id="day-btn" onclick="setView('day')">Dia</button>
-  <button class="primary" onclick="openForm()">+ Novo compromisso</button>
-</div>
+    <section class="agenda-panel">
 
-<div id="calendar">
-  <div class="month-head">
-    <button onclick="changeMonth(-1)">‹</button>
-    <strong id="month-title"></strong>
-    <button onclick="changeMonth(1)">›</button>
+      <div class="agenda-toolbar">
+        <button type="button" class="agenda-button active" data-view="month">
+          Mês
+        </button>
+
+        <button type="button" class="agenda-button" data-view="week">
+          Semana
+        </button>
+
+        <button type="button" class="agenda-button" data-view="day">
+          Dia
+        </button>
+      </div>
+
+      <div class="agenda-period">
+        <h2 id="month-title">Agenda</h2>
+
+        <div class="agenda-navigation">
+          <button type="button" class="agenda-button" id="prev-period">
+            ‹
+          </button>
+
+          <button type="button" class="agenda-button" id="today-button">
+            Hoje
+          </button>
+
+          <button type="button" class="agenda-button" id="next-period">
+            ›
+          </button>
+        </div>
+      </div>
+
+      <div id="days"></div>
+
+      <div id="schedule-wrap" hidden>
+        <div id="schedule-grid" class="schedule-grid"></div>
+      </div>
+
+    </section>
+
+    <section class="agenda-panel">
+      <h2 id="selected-title">Compromissos</h2>
+      <div id="events"></div>
+    </section>
+
+  </main>
+
+  <!-- Formulário de compromisso -->
+  <div id="form-area" hidden>
+
+    <form id="event-form" hidden>
+
+      <h2 data-form-title>Novo compromisso</h2>
+
+      <input type="hidden" id="event-id" name="id">
+
+      <label>
+        Título do compromisso
+        <input
+          type="text"
+          name="title"
+          maxlength="120"
+          placeholder="Ex.: Reunião, consulta, estudo..."
+          required>
+      </label>
+
+      <label>
+        Descrição
+        <textarea
+          name="description"
+          maxlength="1000"
+          placeholder="Detalhes do compromisso"></textarea>
+      </label>
+
+      <label>
+        Data
+        <input
+          type="date"
+          name="date"
+          required>
+      </label>
+
+      <label>
+        Horário de início
+        <input
+          type="time"
+          name="start"
+          step="900"
+          required>
+      </label>
+
+      <label>
+        Horário de término
+        <input
+          type="time"
+          name="end"
+          step="900"
+          required>
+      </label>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          class="agenda-button"
+          id="cancel-event">
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          class="agenda-button primary">
+          Salvar compromisso
+        </button>
+      </div>
+
+    </form>
+
   </div>
-  <div class="weekdays">
-    <div>DOM</div><div>SEG</div><div>TER</div>
-    <div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div>
-  </div>
-  <div class="days" id="days"></div>
-</div>
 
-<div id="agenda-list">
-  <h3 id="selected-title">Compromissos</h3>
-  <div id="events"></div>
-</div>
-
-<div id="form-area">
-  <h3>Novo compromisso</h3>
-
-  <form id="event-form">
-    <label for="title">Título</label>
-    <input id="title" required maxlength="100"
-      placeholder="Ex.: Treino Viva-Fit-PRO">
-
-    <label for="description">Descrição</label>
-    <textarea id="description" rows="2"
-      placeholder="Detalhes do compromisso"></textarea>
-
-    <div class="form-grid">
-      <div>
-        <label for="date">Data</label>
-        <input id="date" type="date" required>
-      </div>
-      <div>
-        <label for="start">Horário inicial</label>
-        <input id="start" type="time" required>
-      </div>
-      <div>
-        <label for="end">Horário final</label>
-        <input id="end" type="time">
-      </div>
-    </div>
-
-    <button class="primary" type="submit">Salvar compromisso</button>
-    <button type="button" onclick="closeForm()">Cancelar</button>
-  </form>
-</div>
-
-<p class="notice">
-  Esta primeira versão salva os compromissos neste navegador.
-  A sincronização com a nuvem será implementada na próxima etapa.
-</p>
-
-<script>
-const STORAGE_KEY = "prospera_agenda_v1";
-
-let events = loadEvents();
-let current = new Date();
-let selected = dateKey(new Date());
-let view = "month";
-
-function loadEvents(){
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch(e) {
-    return [];
-  }
-}
-
-function saveEvents(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
-}
-
-function dateKey(d){
-  return [
-    d.getFullYear(),
-    String(d.getMonth()+1).padStart(2,"0"),
-    String(d.getDate()).padStart(2,"0")
-  ].join("-");
-}
-
-function parseDate(s){
-  const [y,m,d] = s.split("-").map(Number);
-  return new Date(y,m-1,d);
-}
-
-function sameDay(a,b){
-  return dateKey(a) === dateKey(b);
-}
-
-function setView(v){
-  view = v;
-  document.querySelectorAll(".controls button").forEach(b=>{
-    b.classList.remove("active");
-  });
-  document.getElementById(v+"-btn").classList.add("active");
-  render();
-}
-
-function changeMonth(delta){
-  current = new Date(
-    current.getFullYear(),
-    current.getMonth()+delta,
-    1
-  );
-  render();
-}
-
-function render(){
-  const year=current.getFullYear();
-  const month=current.getMonth();
-
-  document.getElementById("month-title").textContent =
-    current.toLocaleDateString("pt-BR",{
-      month:"long",year:"numeric"
-    });
-
-  const days=document.getElementById("days");
-  days.innerHTML="";
-
-  let start, count;
-
-  if(view==="month"){
-    start=new Date(year,month,1);
-    start.setDate(1-start.getDay());
-    count=42;
-  }else if(view==="week"){
-    start=parseDate(selected);
-    start.setDate(start.getDate()-start.getDay());
-    count=7;
-  }else{
-    start=parseDate(selected);
-    count=1;
-  }
-
-  for(let i=0;i<count;i++){
-    const d=new Date(start);
-    d.setDate(start.getDate()+i);
-    const key=dateKey(d);
-
-    const cell=document.createElement("div");
-    cell.className="day";
-    cell.textContent=d.getDate();
-
-    if(d.getMonth()!==month && view==="month")
-      cell.classList.add("other");
-
-    if(key===dateKey(new Date()))
-      cell.classList.add("today");
-
-    if(key===selected)
-      cell.classList.add("selected");
-
-    if(events.some(e=>e.date===key))
-      cell.classList.add("has-event");
-
-    cell.onclick=()=>{
-      selected=key;
-      if(view==="month") view="day";
-      updateButtons();
-      render();
-    };
-
-    days.appendChild(cell);
-  }
-
-  document.getElementById("selected-title").textContent =
-    "Compromissos — "+parseDate(selected).toLocaleDateString("pt-BR");
-
-  renderEvents();
-}
-
-function updateButtons(){
-  document.querySelectorAll(".controls button").forEach(b=>{
-    b.classList.remove("active");
-  });
-  document.getElementById(view+"-btn").classList.add("active");
-}
-
-function renderEvents(){
-  const container=document.getElementById("events");
-  container.innerHTML="";
-
-  const list=events
-    .filter(e=>e.date===selected)
-    .sort((a,b)=>a.start.localeCompare(b.start));
-
-  if(!list.length){
-    container.innerHTML='<p class="empty">Nenhum compromisso nesta data.</p>';
-    return;
-  }
-
-  list.forEach(e=>{
-    const item=document.createElement("div");
-    item.className="event";
-
-    const info=document.createElement("div");
-    const heading=document.createElement("strong");
-    heading.textContent=e.title;
-
-    const time=document.createElement("p");
-    time.textContent=e.start+(e.end?" até "+e.end:"");
-
-    const desc=document.createElement("p");
-    desc.textContent=e.description||"";
-
-    info.append(heading,time,desc);
-
-    const del=document.createElement("button");
-    del.className="delete";
-    del.textContent="Excluir";
-    del.onclick=()=>{
-      if(confirm("Excluir este compromisso?")){
-        events=events.filter(x=>x.id!==e.id);
-        saveEvents();
-        render();
-      }
-    };
-
-    item.append(info,del);
-    container.appendChild(item);
-  });
-}
-
-function openForm(){
-  document.getElementById("form-area").style.display="block";
-  document.getElementById("date").value=selected;
-}
-
-function closeForm(){
-  document.getElementById("form-area").style.display="none";
-}
-
-document.getElementById("event-form").addEventListener("submit",e=>{
-  e.preventDefault();
-
-  const title=document.getElementById("title").value.trim();
-  const description=document.getElementById("description").value.trim();
-  const date=document.getElementById("date").value;
-  const start=document.getElementById("start").value;
-  const end=document.getElementById("end").value;
-
-  if(!title||!date||!start){
-    alert("Preencha o título, a data e o horário inicial.");
-    return;
-  }
-
-  if(end && end<=start){
-    alert("O horário final deve ser posterior ao inicial.");
-    return;
-  }
-
-  events.push({
-    id:Date.now().toString(),
-    title,description,date,start,end
-  });
-
-  saveEvents();
-  selected=date;
-  current=parseDate(date);
-  view="day";
-  updateButtons();
-  e.target.reset();
-  closeForm();
-  render();
-});
-
-render();
-</script>
+  <script src="js/agenda.js"></script>
 
 </body>
 </html>
