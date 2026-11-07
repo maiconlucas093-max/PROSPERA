@@ -1,302 +1,442 @@
 
-/* =========================================
-   PROSPERA — AGENDA INTELIGENTE
-   Gerenciamento de compromissos
-========================================= */
+(() => {
+  "use strict";
 
-const STORAGE_KEY = "prospera_agenda_v1";
+  const STORAGE_KEY = "prospera_agenda_v1";
+  const SLOT_MINUTES = 15;
+  const DAY_MINUTES = 24 * 60;
 
-let events = loadEvents();
-let current = new Date();
-let selected = dateKey(new Date());
-let view = "month";
+  let events = [];
+  let currentDate = new Date();
+  let currentView = "month";
+  let editingId = null;
 
-/* =========================================
-   ARMAZENAMENTO LOCAL
-========================================= */
+  const $ = (id) => document.getElementById(id);
 
-function loadEvents() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
-  } catch (error) {
-    console.error("Erro ao carregar compromissos:", error);
-    return [];
-  }
-}
-
-function saveEvents() {
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(events)
-  );
-}
-
-/* =========================================
-   DATAS
-========================================= */
-
-function dateKey(date) {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0")
-  ].join("-");
-}
-
-function parseDate(value) {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function sameDay(dateA, dateB) {
-  return dateKey(dateA) === dateKey(dateB);
-}
-
-/* =========================================
-   NAVEGAÇÃO DA AGENDA
-========================================= */
-
-function setView(newView) {
-  view = newView;
-  updateButtons();
-  render();
-}
-
-function changeMonth(direction) {
-  current = new Date(
-    current.getFullYear(),
-    current.getMonth() + direction,
-    1
-  );
-
-  render();
-}
-
-function updateButtons() {
-  document.querySelectorAll(".controls button").forEach(button => {
-    button.classList.remove("active");
-  });
-
-  const activeButton = document.getElementById(view + "-btn");
-
-  if (activeButton) {
-    activeButton.classList.add("active");
-  }
-}
-
-/* =========================================
-   RENDERIZAÇÃO DO CALENDÁRIO
-========================================= */
-
-function render() {
-  const year = current.getFullYear();
-  const month = current.getMonth();
-
-  const monthTitle = document.getElementById("month-title");
-  const daysContainer = document.getElementById("days");
-
-  if (!monthTitle || !daysContainer) {
-    console.error("Elementos do calendário não encontrados.");
-    return;
+  function localDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   }
 
-  monthTitle.textContent = current.toLocaleDateString("pt-BR", {
-    month: "long",
-    year: "numeric"
-  });
-
-  daysContainer.innerHTML = "";
-
-  let start;
-  let count;
-
-  if (view === "month") {
-    start = new Date(year, month, 1);
-    start.setDate(1 - start.getDay());
-    count = 42;
-  } else if (view === "week") {
-    start = parseDate(selected);
-    start.setDate(start.getDate() - start.getDay());
-    count = 7;
-  } else {
-    start = parseDate(selected);
-    count = 1;
+  function parseDate(value) {
+    const [y, m, d] = value.split("-").map(Number);
+    return new Date(y, m - 1, d);
   }
 
-  for (let i = 0; i < count; i++) {
-    const date = new Date(start);
-    date.setDate(start.getDate() + i);
+  function addDays(date, amount) {
+    const result = new Date(date);
+    result.setDate(result.getDate() + amount);
+    return result;
+  }
 
-    const key = dateKey(date);
-    const cell = document.createElement("div");
+  function startOfWeek(date) {
+    const result = new Date(date);
+    const day = (result.getDay() + 6) % 7;
+    result.setDate(result.getDate() - day);
+    result.setHours(0, 0, 0, 0);
+    return result;
+  }
 
-    cell.className = "day";
-    cell.textContent = date.getDate();
+  function formatDate(date) {
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric"
+    });
+  }
 
-    if (date.getMonth() !== month && view === "month") {
-      cell.classList.add("other");
+  function formatTime(minutes) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+
+  function timeToMinutes(value) {
+    if (!value || !/^\d{2}:\d{2}$/.test(value)) return NaN;
+    const [h, m] = value.split(":").map(Number);
+    if (h > 23 || m > 59) return NaN;
+    return h * 60 + m;
+  }
+
+  function loadEvents() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      if (!Array.isArray(saved)) return [];
+
+      return saved
+        .filter((event) => event && event.date && event.title)
+        .map((event) => ({
+          id: event.id || makeId(),
+          title: String(event.title),
+          description: String(event.description || ""),
+          date: String(event.date),
+          start: event.start || "09:00",
+          end: event.end || "10:00"
+        }));
+    } catch (error) {
+      console.error("Erro ao carregar agenda:", error);
+      return [];
+    }
+  }
+
+  function saveEvents() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    } catch (error) {
+      alert("Não foi possível salvar os compromissos neste navegador.");
+      console.error(error);
+    }
+  }
+
+  function makeId() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function sortedEvents(list) {
+    return [...list].sort((a, b) =>
+      a.start.localeCompare(b.start)
+    );
+  }
+
+  function createElement(tag, className, text) {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (text !== undefined) element.textContent = text;
+    return element;
+  }
+
+  function render() {
+    renderHeader();
+    renderMonth();
+    renderSchedule();
+    renderEventList();
+    updateViewButtons();
+  }
+
+  function renderHeader() {
+    const title = $("month-title");
+    if (!title) return;
+
+    if (currentView === "month") {
+      title.textContent = currentDate.toLocaleDateString("pt-BR", {
+        month: "long",
+        year: "numeric"
+      });
+    } else if (currentView === "week") {
+      const first = startOfWeek(currentDate);
+      const last = addDays(first, 6);
+      title.textContent = `${first.toLocaleDateString("pt-BR")} – ${last.toLocaleDateString("pt-BR")}`;
+    } else {
+      title.textContent = formatDate(currentDate);
     }
 
-    if (key === dateKey(new Date())) {
-      cell.classList.add("today");
+    const selectedTitle = $("selected-title");
+    if (selectedTitle) {
+      selectedTitle.textContent = formatDate(currentDate);
     }
+  }
 
-    if (key === selected) {
-      cell.classList.add("selected");
-    }
+  function updateViewButtons() {
+    document.querySelectorAll("[data-view]").forEach((button) => {
+      const active = button.dataset.view === currentView;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+  }
 
-    if (events.some(event => event.date === key)) {
-      cell.classList.add("has-event");
-    }
+  function renderMonth() {
+    const container = $("days");
+    if (!container) return;
 
-    cell.addEventListener("click", () => {
-      selected = key;
+    container.replaceChildren();
 
-      if (view === "month") {
-        view = "day";
-      }
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const offset = (firstDay.getDay() + 6) % 7;
+    const start = addDays(firstDay, -offset);
 
-      updateButtons();
-      render();
+    const weekdays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+
+    weekdays.forEach((name) => {
+      container.appendChild(
+        createElement("div", "calendar-weekday", name)
+      );
     });
 
-    daysContainer.appendChild(cell);
-  }
+    for (let i = 0; i < 42; i++) {
+      const date = addDays(start, i);
+      const dateKey = localDate(date);
+      const dayEvents = events.filter((event) => event.date === dateKey);
 
-  const selectedTitle = document.getElementById("selected-title");
+      const button = createElement("button", "calendar-day");
+      button.type = "button";
+      button.textContent = String(date.getDate());
 
-  if (selectedTitle) {
-    selectedTitle.textContent =
-      "Compromissos — " +
-      parseDate(selected).toLocaleDateString("pt-BR");
-  }
+      if (date.getMonth() !== month) button.classList.add("outside-month");
+      if (dateKey === localDate(new Date())) button.classList.add("today");
+      if (dateKey === localDate(currentDate)) button.classList.add("selected");
+      if (dayEvents.length) button.classList.add("has-events");
 
-  renderEvents();
-}
+      button.setAttribute("aria-label",
+        `${formatDate(date)}, ${dayEvents.length} compromissos`
+      );
 
-/* =========================================
-   LISTAGEM DE COMPROMISSOS
-========================================= */
-
-function renderEvents() {
-  const container = document.getElementById("events");
-
-  if (!container) return;
-
-  container.innerHTML = "";
-
-  const list = events
-    .filter(event => event.date === selected)
-    .sort((a, b) => a.start.localeCompare(b.start));
-
-  if (list.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "empty";
-    empty.textContent = "Nenhum compromisso nesta data.";
-
-    container.appendChild(empty);
-    return;
-  }
-
-  list.forEach(event => {
-    const item = document.createElement("div");
-    item.className = "event";
-
-    const info = document.createElement("div");
-
-    const heading = document.createElement("strong");
-    heading.textContent = event.title;
-
-    const time = document.createElement("p");
-    time.textContent =
-      event.start + (event.end ? " até " + event.end : "");
-
-    const description = document.createElement("p");
-    description.textContent = event.description || "";
-
-    info.append(heading, time, description);
-
-    const actions = document.createElement("div");
-
-    const deleteButton = document.createElement("button");
-    deleteButton.className = "delete";
-    deleteButton.textContent = "Excluir";
-
-    deleteButton.addEventListener("click", () => {
-      if (confirm("Deseja excluir este compromisso?")) {
-        events = events.filter(item => item.id !== event.id);
-
-        saveEvents();
+      button.addEventListener("click", () => {
+        currentDate = date;
+        currentView = "day";
         render();
+      });
+
+      if (dayEvents.length) {
+        button.appendChild(createElement("span", "calendar-dot"));
       }
+
+      container.appendChild(button);
+    }
+  }
+
+  function renderSchedule() {
+    const wrapper = $("schedule-wrap");
+    const grid = $("schedule-grid");
+    if (!wrapper || !grid) return;
+
+    wrapper.hidden = currentView === "month";
+    grid.replaceChildren();
+
+    const dates = currentView === "day"
+      ? [new Date(currentDate)]
+      : Array.from({ length: 7 }, (_, i) =>
+          addDays(startOfWeek(currentDate), i)
+        );
+
+    grid.className = `schedule-grid ${currentView}-schedule`;
+
+    const corner = createElement("div", "schedule-corner", "Horário");
+    grid.appendChild(corner);
+
+    dates.forEach((date) => {
+      const header = createElement(
+        "div",
+        "schedule-day-head",
+        date.toLocaleDateString("pt-BR", {
+          weekday: "short",
+          day: "2-digit",
+          month: "2-digit"
+        })
+      );
+
+      if (localDate(date) === localDate(new Date())) {
+        header.classList.add("today");
+      }
+
+      grid.appendChild(header);
     });
 
-    actions.appendChild(deleteButton);
+    for (let minutes = 0; minutes < DAY_MINUTES; minutes += SLOT_MINUTES) {
+      const time = createElement(
+        "div",
+        "schedule-time",
+        formatTime(minutes)
+      );
+      grid.appendChild(time);
 
-    item.append(info, actions);
-    container.appendChild(item);
-  });
-}
+      dates.forEach((date) => {
+        const dateKey = localDate(date);
+        const slot = createElement("button", "schedule-slot");
+        slot.type = "button";
+        slot.dataset.date = dateKey;
+        slot.dataset.time = formatTime(minutes);
+        slot.setAttribute(
+          "aria-label",
+          `Criar compromisso em ${dateKey} às ${formatTime(minutes)}`
+        );
 
-/* =========================================
-   FORMULÁRIO
-========================================= */
+        slot.addEventListener("click", () => {
+          openForm({
+            date: dateKey,
+            start: formatTime(minutes),
+            end: formatTime(Math.min(minutes + 60, DAY_MINUTES - 1))
+          });
+        });
 
-function openForm() {
-  const formArea = document.getElementById("form-area");
-  const dateInput = document.getElementById("date");
+        grid.appendChild(slot);
+      });
+    }
 
-  if (!formArea || !dateInput) return;
+    events.forEach((event) => {
+      const dateIndex = dates.findIndex(
+        (date) => localDate(date) === event.date
+      );
+      if (dateIndex === -1) return;
 
-  formArea.style.display = "block";
-  dateInput.value = selected;
-}
+      const start = timeToMinutes(event.start);
+      let end = timeToMinutes(event.end);
 
-function closeForm() {
-  const formArea = document.getElementById("form-area");
+      if (!Number.isFinite(start)) return;
+      if (!Number.isFinite(end) || end <= start) {
+        end = Math.min(start + 60, DAY_MINUTES);
+      }
 
-  if (formArea) {
-    formArea.style.display = "none";
+      const eventElement = createElement("button", "schedule-event");
+      eventElement.type = "button";
+      eventElement.textContent = `${event.start} · ${event.title}`;
+      eventElement.title = `${event.title} (${event.start}–${event.end})`;
+
+      const top = start / SLOT_MINUTES;
+      const duration = Math.max(
+        1,
+        (end - start) / SLOT_MINUTES
+      );
+
+      eventElement.style.gridColumn = String(dateIndex + 2);
+      eventElement.style.gridRow = `${Math.floor(top) + 2} / span ${Math.ceil(duration)}`;
+      eventElement.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openForm(event);
+      });
+
+      grid.appendChild(eventElement);
+    });
   }
-}
 
-/* =========================================
-   SALVAR COMPROMISSO
-========================================= */
+  function renderEventList() {
+    const container = $("events");
+    if (!container) return;
 
-function initializeForm() {
-  const form = document.getElementById("event-form");
+    container.replaceChildren();
 
-  if (!form) {
-    console.error("Formulário da agenda não encontrado.");
-    return;
+    const dateKey = localDate(currentDate);
+    const dayEvents = sortedEvents(
+      events.filter((event) => event.date === dateKey)
+    );
+
+    if (!dayEvents.length) {
+      container.appendChild(
+        createElement("p", "empty-events", "Nenhum compromisso neste dia.")
+      );
+      return;
+    }
+
+    dayEvents.forEach((event) => {
+      const item = createElement("article", "agenda-event-card");
+      const info = createElement("div", "agenda-event-info");
+      const title = createElement("strong", "", event.title);
+      const time = createElement(
+        "span",
+        "agenda-event-time",
+        `${event.start} – ${event.end}`
+      );
+
+      info.append(title, time);
+
+      if (event.description) {
+        info.appendChild(
+          createElement("p", "agenda-event-description", event.description)
+        );
+      }
+
+      const actions = createElement("div", "agenda-event-actions");
+
+      const editButton = createElement("button", "", "Editar");
+      editButton.type = "button";
+      editButton.addEventListener("click", () => openForm(event));
+
+      const deleteButton = createElement("button", "", "Excluir");
+      deleteButton.type = "button";
+      deleteButton.addEventListener("click", () => deleteEvent(event.id));
+
+      actions.append(editButton, deleteButton);
+      item.append(info, actions);
+      container.appendChild(item);
+    });
   }
 
-  form.addEventListener("submit", event => {
+  function openForm(event = {}) {
+    const form = $("event-form");
+    const area = $("form-area");
+    if (!form) return;
+
+    editingId = event.id || null;
+
+    if (form.elements.title) form.elements.title.value = event.title || "";
+    if (form.elements.description) {
+      form.elements.description.value = event.description || "";
+    }
+    if (form.elements.date) {
+      form.elements.date.value = event.date || localDate(currentDate);
+    }
+    if (form.elements.start) {
+      form.elements.start.value = event.start || "09:00";
+    }
+    if (form.elements.end) {
+      form.elements.end.value = event.end || "10:00";
+    }
+
+    const hiddenId = $("event-id");
+    if (hiddenId) hiddenId.value = editingId || "";
+
+    const heading = form.querySelector("[data-form-title]");
+    if (heading) {
+      heading.textContent = editingId
+        ? "Editar compromisso"
+        : "Novo compromisso";
+    }
+
+    if (area) area.hidden = false;
+    form.hidden = false;
+
+    const submit = form.querySelector('[type="submit"]');
+    if (submit) submit.textContent = editingId
+      ? "Salvar alterações"
+      : "Salvar compromisso";
+
+    if (form.elements.title) form.elements.title.focus();
+  }
+
+  function closeForm() {
+    const area = $("form-area");
+    const form = $("event-form");
+
+    if (area) area.hidden = true;
+    if (form) {
+      form.hidden = true;
+      form.reset();
+    }
+
+    editingId = null;
+  }
+
+  function handleSubmit(event) {
     event.preventDefault();
 
-    const title = document.getElementById("title").value.trim();
+    const form = $("event-form");
+    if (!form) return;
 
-    const description =
-      document.getElementById("description").value.trim();
+    const title = form.elements.title.value.trim();
+    const description = form.elements.description.value.trim();
+    const date = form.elements.date.value;
+    const start = form.elements.start.value;
+    const end = form.elements.end.value;
 
-    const date = document.getElementById("date").value;
-    const start = document.getElementById("start").value;
-    const end = document.getElementById("end").value;
+    const startMinutes = timeToMinutes(start);
+    const endMinutes = timeToMinutes(end);
 
-    if (!title || !date || !start) {
-      alert("Preencha o título, a data e o horário inicial.");
+    if (!title || !date || !Number.isFinite(startMinutes) ||
+        !Number.isFinite(endMinutes)) {
+      alert("Preencha o título, a data e os horários corretamente.");
       return;
     }
 
-    if (end && end <= start) {
-      alert("O horário final deve ser posterior ao inicial.");
+    if (endMinutes <= startMinutes) {
+      alert("O horário de término precisa ser posterior ao início.");
       return;
     }
 
-    const newEvent = {
-      id: Date.now().toString(),
+    const eventData = {
+      id: editingId || makeId(),
       title,
       description,
       date,
@@ -304,35 +444,98 @@ function initializeForm() {
       end
     };
 
-    events.push(newEvent);
+    if (editingId) {
+      events = events.map((item) =>
+        item.id === editingId ? eventData : item
+      );
+    } else {
+      events.push(eventData);
+    }
 
     saveEvents();
-
-    selected = date;
-    current = parseDate(date);
-    view = "day";
-
-    updateButtons();
-    form.reset();
+    currentDate = parseDate(date);
+    currentView = "day";
     closeForm();
     render();
-  });
-}
+  }
 
-/* =========================================
-   INICIALIZAÇÃO
-========================================= */
+  function deleteEvent(id) {
+    const event = events.find((item) => item.id === id);
+    if (!event) return;
 
-function initializeAgenda() {
-  initializeForm();
-  updateButtons();
-  render();
+    if (!confirm(`Excluir o compromisso "${event.title}"?`)) return;
 
-  console.log("PROSPERA Agenda inicializada.");
-}
+    events = events.filter((item) => item.id !== id);
+    saveEvents();
+    render();
+  }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initializeAgenda);
-} else {
-  initializeAgenda();
-}
+  function changePeriod(direction) {
+    if (currentView === "month") {
+      currentDate = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() + direction,
+        1
+      );
+    } else if (currentView === "week") {
+      currentDate = addDays(currentDate, direction * 7);
+    } else {
+      currentDate = addDays(currentDate, direction);
+    }
+
+    render();
+  }
+
+  function bindControls() {
+    document.querySelectorAll("[data-view]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const view = button.dataset.view;
+        if (!["month", "week", "day"].includes(view)) return;
+        currentView = view;
+        render();
+      });
+    });
+
+    const previous = $("prev-period");
+    const next = $("next-period");
+    const today = $("today-button");
+    const add = $("add-event-button");
+    const close = $("close-form");
+    const cancel = $("cancel-event");
+
+    if (previous) {
+      previous.addEventListener("click", () => changePeriod(-1));
+    }
+    if (next) {
+      next.addEventListener("click", () => changePeriod(1));
+    }
+    if (today) {
+      today.addEventListener("click", () => {
+        currentDate = new Date();
+        render();
+      });
+    }
+    if (add) {
+      add.addEventListener("click", () => openForm());
+    }
+    if (close) close.addEventListener("click", closeForm);
+    if (cancel) cancel.addEventListener("click", closeForm);
+
+    const form = $("event-form");
+    if (form) form.addEventListener("submit", handleSubmit);
+  }
+
+  function initializeAgenda() {
+    events = loadEvents();
+    bindControls();
+    render();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeAgenda, {
+      once: true
+    });
+  } else {
+    initializeAgenda();
+  }
+})();
