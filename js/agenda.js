@@ -100,9 +100,7 @@ let activeUserId = "__initial__";
     }
   }
 
-  function makeId() {
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  }
+  
 
   function sortedEvents(list) {
     return [...list].sort((a, b) =>
