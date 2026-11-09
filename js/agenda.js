@@ -436,7 +436,14 @@ let activeUserId = "__initial__";
     alert("O horário de término precisa ser posterior ao início.");
     return;
   }
-  
+    if (
+    startMinutes % SLOT_MINUTES !== 0 ||
+    (endMinutes % SLOT_MINUTES !== 0 &&
+      endMinutes !== DAY_MINUTES - 1)
+  ) {
+    alert("Use intervalos de 15 minutos. O último horário pode terminar às 23:59.");
+    return;
+  }
   const startDate = new Date(`${date}T${start}:00`);
   const endDate = new Date(`${date}T${end}:00`);
   
