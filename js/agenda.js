@@ -419,55 +419,84 @@ let activeUserId = "__initial__";
     editingId = null;
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
-
-    const form = $("event-form");
-    if (!form) return;
-
-    const title = form.elements.title.value.trim();
-    const description = form.elements.description.value.trim();
-    const date = form.elements.date.value;
-    const start = form.elements.start.value;
-    const end = form.elements.end.value;
-
-    const startMinutes = timeToMinutes(start);
-    const endMinutes = timeToMinutes(end);
-
-    if (!title || !date || !Number.isFinite(startMinutes) ||
-        !Number.isFinite(endMinutes)) {
-      alert("Preencha o título, a data e os horários corretamente.");
-      return;
-    }
-
-    if (endMinutes <= startMinutes) {
-      alert("O horário de término precisa ser posterior ao início.");
-      return;
-    }
-
-    const eventData = {
-      id: editingId || makeId(),
-      title,
-      description,
-      date,
-      start,
-      end
-    };
-
+  async function handleSubmit(event) {
+  event.preventDefault();
+  
+  if (!currentUser) {
+    alert("Entre na sua conta PROSPERA antes de salvar.");
+    return;
+  }
+  
+  const form = $("event-form");
+  if (!form) return;
+  
+  const title = form.elements.title.value.trim();
+  const description = form.elements.description.value.trim();
+  const date = form.elements.date.value;
+  const start = form.elements.start.value;
+  const end = form.elements.end.value;
+  
+  const startMinutes = timeToMinutes(start);
+  const endMinutes = timeToMinutes(end);
+  
+  if (!title || !date || !Number.isFinite(startMinutes) ||
+    !Number.isFinite(endMinutes)) {
+    alert("Preencha o título, a data e os horários corretamente.");
+    return;
+  }
+  
+  if (endMinutes <= startMinutes) {
+    alert("O horário de término precisa ser posterior ao início.");
+    return;
+  }
+  
+  const startDate = new Date(`${date}T${start}:00`);
+  const endDate = new Date(`${date}T${end}:00`);
+  
+  const eventData = {
+    title,
+    description,
+    starts_at: startDate.toISOString(),
+    ends_at: endDate.toISOString(),
+    item_type: "task",
+    area: "personal",
+    status: "pending",
+    source_app: "PROSPERA"
+  };
+  
+  try {
+    let result;
+    
     if (editingId) {
-      events = events.map((item) =>
-        item.id === editingId ? eventData : item
-      );
+      result = await supabaseClient
+        .from("agenda_items")
+        .update(eventData)
+        .eq("id", editingId)
+        .eq("user_id", currentUser.id);
     } else {
-      events.push(eventData);
+      result = await supabaseClient
+        .from("agenda_items")
+        .insert({
+          ...eventData,
+          user_id: currentUser.id
+        });
     }
-
-    saveEvents();
+    
+    if (result.error) throw result.error;
+    
+    events = await loadEvents();
+    
     currentDate = parseDate(date);
     currentView = "day";
+    
     closeForm();
     render();
+    
+  } catch (error) {
+    console.error("Erro ao salvar compromisso:", error);
+    alert("Não foi possível salvar na nuvem. Verifique sua conexão e tente novamente.");
   }
+}
 
   function deleteEvent(id) {
     const event = events.find((item) => item.id === id);
