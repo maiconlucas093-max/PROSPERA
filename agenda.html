@@ -400,6 +400,42 @@
       .agenda-button {
         padding: 9px 10px;
       }
+      .auth-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.auth-fields label {
+  display: grid;
+  gap: 6px;
+  color: #dce3ed;
+  font-size: 13px;
+}
+
+.auth-fields input {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #43536b;
+  border-radius: 7px;
+  background: #101827;
+  color: white;
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.auth-status {
+  color: #aab4c5;
+}
     }
   </style>
 </head>
@@ -420,7 +456,54 @@
         + Novo compromisso
       </button>
     </header>
+<section class="agenda-panel auth-panel">
+  <h2>Acesso à sua conta</h2>
+  <p id="auth-status" class="auth-status" aria-live="polite">
+    Entre ou crie sua conta para acessar sua agenda.
+  </p>
 
+  <form id="auth-form">
+    <div class="auth-fields">
+      <label>
+        E-mail
+        <input
+          type="email"
+          id="auth-email"
+          autocomplete="email"
+          required
+          placeholder="Seu e-mail">
+      </label>
+
+      <label>
+        Senha
+        <input
+          type="password"
+          id="auth-password"
+          autocomplete="current-password"
+          minlength="6"
+          required
+          placeholder="Sua senha">
+      </label>
+    </div>
+
+    <div class="auth-actions">
+      <button type="button" class="agenda-button primary" id="login-button">
+        Entrar
+      </button>
+
+      <button type="button" class="agenda-button" id="signup-button">
+        Criar conta
+      </button>
+    </div>
+  </form>
+
+  <div id="auth-session" hidden>
+    <p id="auth-user"></p>
+    <button type="button" class="agenda-button" id="logout-button">
+      Sair da conta
+    </button>
+  </div>
+</section>
     <section class="agenda-panel">
 
       <div class="agenda-toolbar">
