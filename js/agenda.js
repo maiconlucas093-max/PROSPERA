@@ -5,7 +5,10 @@
   const STORAGE_KEY = "prospera_agenda_v1";
   const SLOT_MINUTES = 15;
   const DAY_MINUTES = 24 * 60;
+const supabaseClient = window.prosperaSupabase;
 
+let currentUser = null;
+let activeUserId = "__initial__";
   let events = [];
   let currentDate = new Date();
   let currentView = "month";
