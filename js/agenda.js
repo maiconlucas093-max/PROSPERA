@@ -498,16 +498,32 @@ let activeUserId = "__initial__";
   }
 }
 
-  function deleteEvent(id) {
-    const event = events.find((item) => item.id === id);
-    if (!event) return;
-
-    if (!confirm(`Excluir o compromisso "${event.title}"?`)) return;
-
-    events = events.filter((item) => item.id !== id);
-    saveEvents();
-    render();
+  async function deleteEvent(id) {
+  const event = events.find((item) => item.id === id);
+  
+  if (!event || !currentUser) return;
+  
+  if (!confirm(`Excluir o compromisso "${event.title}"?`)) {
+    return;
   }
+  
+  try {
+    const { error } = await supabaseClient
+      .from("agenda_items")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", currentUser.id);
+    
+    if (error) throw error;
+    
+    events = await loadEvents();
+    render();
+    
+  } catch (error) {
+    console.error("Erro ao excluir compromisso:", error);
+    alert("Não foi possível excluir o compromisso da nuvem.");
+  }
+}
 
   function changePeriod(direction) {
     if (currentView === "month") {
