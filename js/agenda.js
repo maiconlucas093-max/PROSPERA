@@ -535,17 +535,52 @@ let activeUserId = "__initial__";
     if (form) form.addEventListener("submit", handleSubmit);
   }
 
-  function initializeAgenda() {
-    events = loadEvents();
-    bindControls();
+  async function syncAgendaSession(session) {
+  const nextUser = session ? session.user : null;
+  const nextUserId = nextUser ? nextUser.id : null;
+  
+  if (nextUserId === activeUserId) return;
+  
+  activeUserId = nextUserId;
+  currentUser = nextUser;
+  
+  if (!currentUser) {
+    events = [];
     render();
+    return;
   }
+  
+  try {
+    events = await loadEvents();
+    render();
+  } catch (error) {
+    console.error("Erro ao carregar agenda:", error);
+    alert("Não foi possível carregar seus compromissos da nuvem.");
+  }
+}
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initializeAgenda, {
-      once: true
-    });
-  } else {
-    initializeAgenda();
-  }
+function initializeAgenda() {
+  bindControls();
+  
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    syncAgendaSession(session);
+  });
+  
+  supabaseClient.auth.getSession().then(({ data, error }) => {
+    if (error) {
+      console.error("Erro ao verificar sessão:", error);
+      return;
+    }
+    
+    syncAgendaSession(data.session);
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeAgenda, {
+    once: true
+  });
+} else {
+  initializeAgenda();
+}
 })();
