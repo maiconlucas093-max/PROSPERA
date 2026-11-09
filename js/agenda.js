@@ -430,11 +430,7 @@ let activeUserId = "__initial__";
   const startMinutes = timeToMinutes(start);
   const endMinutes = timeToMinutes(end);
   
-  if (!title || !date || !Number.isFinite(startMinutes) ||
-    !Number.isFinite(endMinutes)) {
-    alert("Preencha o título, a data e os horários corretamente.");
-    return;
-  }
+  
   
   if (endMinutes <= startMinutes) {
     alert("O horário de término precisa ser posterior ao início.");
