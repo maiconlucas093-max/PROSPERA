@@ -2,7 +2,7 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "prospera_agenda_v1";
+  
   const SLOT_MINUTES = 15;
   const DAY_MINUTES = 24 * 60;
 const supabaseClient = window.prosperaSupabase;
@@ -91,14 +91,7 @@ let activeUserId = "__initial__";
   });
 }
 
-  function saveEvents() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
-    } catch (error) {
-      alert("Não foi possível salvar os compromissos neste navegador.");
-      console.error(error);
-    }
-  }
+  
 
   
 
