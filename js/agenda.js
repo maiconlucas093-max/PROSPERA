@@ -63,26 +63,33 @@ let activeUserId = "__initial__";
     return h * 60 + m;
   }
 
-  function loadEvents() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      if (!Array.isArray(saved)) return [];
-
-      return saved
-        .filter((event) => event && event.date && event.title)
-        .map((event) => ({
-          id: event.id || makeId(),
-          title: String(event.title),
-          description: String(event.description || ""),
-          date: String(event.date),
-          start: event.start || "09:00",
-          end: event.end || "10:00"
-        }));
-    } catch (error) {
-      console.error("Erro ao carregar agenda:", error);
-      return [];
-    }
-  }
+  async function loadEvents() {
+  const { data, error } = await supabaseClient
+    .from("agenda_items")
+    .select("id, title, description, starts_at, ends_at")
+    .eq("user_id", currentUser.id)
+    .order("starts_at", { ascending: true });
+  
+  if (error) throw error;
+  
+  return (data || []).map((item) => {
+    const startDate = new Date(item.starts_at);
+    const endDate = new Date(item.ends_at);
+    
+    return {
+      id: item.id,
+      title: item.title,
+      description: item.description || "",
+      date: localDate(startDate),
+      start: formatTime(
+        startDate.getHours() * 60 + startDate.getMinutes()
+      ),
+      end: formatTime(
+        endDate.getHours() * 60 + endDate.getMinutes()
+      )
+    };
+  });
+}
 
   function saveEvents() {
     try {
